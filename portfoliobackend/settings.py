@@ -61,7 +61,7 @@ DEBUG = False
 
 ALLOWED_HOSTS = [
 
-    "shivamportfolio-backend.vercel.app",  # Your backend domain
+    "portfolio-backend-h6hf.onrender.com",  # Your backend domain
     "localhost",  # Allow local development
     "127.0.0.1",
     "https://shivam-portfoliio.vercel.app/"
