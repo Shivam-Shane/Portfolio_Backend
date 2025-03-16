@@ -170,6 +170,4 @@ USE_TZ = True  # Django stores time in UTC but converts to TIME_ZONE
 USE_I18N = True
 STATIC_URL = 'static/'
 # Define the directories where static files will be collected from
-STATICFILES_DIRS = [os.path.join(BASE_DIR, '/static')]
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
