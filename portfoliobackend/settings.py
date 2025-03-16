@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 load_dotenv()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-
+PORT = os.getenv("PORT", "8000")
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,  # Keep Django's existing loggers
