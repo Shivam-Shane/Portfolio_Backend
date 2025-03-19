@@ -7,6 +7,7 @@ from langchain_groq import ChatGroq
 from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
+from upstash_redis import Redis
 from vectorstorecreation import load_vector_store
 from better_profanity import profanity
 from templates import template_details
@@ -25,7 +26,10 @@ class ChatModelPortfolio():
         self.prompt=PromptTemplate(
             input_variables=["history", "input", "context"],
             template= template_details)
-        
+        self.redis = Redis(
+            url=os.getenv("UPSTASH_REDIS_REST_URL"),
+            token=os.getenv("UPSTASH_REDIS_REST_TOKEN")
+        )
         
     def generate_session_id(self):
         """Generate session id for the session
@@ -36,9 +40,18 @@ class ChatModelPortfolio():
     
     def get_session_history(self,session_id: str) -> ChatMessageHistory:
         try:
-            if session_id not in self.history_store:
-                self.history_store[session_id] = ChatMessageHistory()
-            return self.history_store[session_id]
+            # Use Upstash Redis to store/retrieve history as a list
+            history_key = f"chat_history:{session_id}"
+            messages = self.redis.lrange(history_key, -5, -1)  # Get last 5 messages (returns list of strings)
+            chat_history = ChatMessageHistory()
+            for msg in messages:
+                # Messages are stored as "role:content" (e.g., "human:hello")
+                role, content = msg.split(":", 1)  # Split directly on string
+                if role == "human":
+                    chat_history.add_user_message(content)
+                elif role == "ai":
+                    chat_history.add_ai_message(content)
+            return chat_history
         except Exception as e:
             logger.error(f"Error getting session history ---{e}")
             return ChatMessageHistory()
@@ -52,7 +65,10 @@ class ChatModelPortfolio():
         if self.filter_input(message):
             return "Sorry, I’m here to help with portfolio-related questions only."
         try:
-
+            chat_deletion_time=os.getenv("CHAT_DELETION_TIME") or 600
+            history_key = f"chat_history:{session_id}"
+            self.redis.rpush(history_key, f"human:{message}")
+            self.redis.expire(history_key, chat_deletion_time) # Set TTL to remove chat from redis cache
             rag_chain_with_history = RunnableWithMessageHistory(
                 runnable=(
                     {"context": lambda x: self.retriever.invoke(x["input"]), "input": RunnablePassthrough(), "history": lambda x: x.get("history", "")}
@@ -69,6 +85,10 @@ class ChatModelPortfolio():
                     {"input": message},
                     config={"configurable": {"session_id": session_id}}
                 )
+            # Store AI response in Redis
+            self.redis.rpush(history_key, f"ai:{response}")
+            self.redis.expire(history_key, chat_deletion_time)  # Set TTL to remove chat from redis cache
+            
             return response
         except Exception as e:
             logger.error(f"Error generating response ---{e}")
