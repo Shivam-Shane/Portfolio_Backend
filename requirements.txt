@@ -4,7 +4,8 @@ onnxruntime==1.16.0
 python-dotenv==1.0.1
 langchain_community==0.3.19
 langchain_huggingface==0.1.2
-langchain_chroma==0.2.2
+pinecone-client
+langchain-pinecone
 langchain_groq==0.2.5
 better_profanity==0.7.0
 python-logging-loki==0.3.1

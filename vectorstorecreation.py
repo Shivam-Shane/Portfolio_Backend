@@ -4,23 +4,19 @@ from langchain_community.document_loaders import UnstructuredMarkdownLoader
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from itertools import chain
-from langchain_chroma import Chroma
+from pinecone import Pinecone, ServerlessSpec
+from langchain_pinecone import PineconeVectorStore
 from langchain_core.documents import Document
 from logger import logger
+
+# Initialize Pinecone client (add your API key and environment)
+PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")  # Set this in your environment
+PINECONE_INDEX_NAME = "chatbot-portfolio"  # Choose your index name
 
 def process_markdown_files(directory: str = "readmes") -> List[List[Document]]:
     """
     Load Markdown files from a directory and return a list of documents.
-
-    Args:
-        directory (str): Directory containing Markdown files. Defaults to "readmes".
-
-    Returns:
-        List[List[Document]]: List of loaded documents.
-
-    Raises:
-        FileNotFoundError: If the specified directory doesn't exist.
-        Exception: For other unexpected errors during file processing.
+    (Remains unchanged from original)
     """
     try:
         if not os.path.exists(directory):
@@ -45,21 +41,19 @@ def process_markdown_files(directory: str = "readmes") -> List[List[Document]]:
 
 def vector_store_creation(
     docs: List[List[Document]],
-    persist_directory: str = "./chatbot_portfolio",
     chunk_size: int = 1000,
     chunk_overlap: int = 200
-) -> Chroma:
+) -> PineconeVectorStore:
     """
-    Create and persist a Chroma vector store from documents.
+    Create and populate a Pinecone vector store from documents.
 
     Args:
         docs (List[List[Document]]): List of documents to process.
-        persist_directory (str): Directory to persist the vector store.
         chunk_size (int): Size of document chunks.
         chunk_overlap (int): Overlap between chunks.
 
     Returns:
-        Chroma: Initialized vector store object.
+        PineconeVectorStore: Initialized vector store object.
 
     Raises:
         ValueError: If input documents are empty or invalid.
@@ -69,15 +63,27 @@ def vector_store_creation(
         if not docs or not any(docs):
             raise ValueError("No valid documents provided")
 
-        # Initialize embeddings with optimized parameters
+        # Initialize embeddings
         hf_embeddings = HuggingFaceEmbeddings(
             model_name="sentence-transformers/all-MiniLM-L6-v2",
-            model_kwargs={'device': 'cpu'},  # Adjust based on available hardware
+            model_kwargs={'device': 'cpu'},
             encode_kwargs={'normalize_embeddings': True},
             cache_folder="/app/hf_cache"
         )
 
-        # Split documents efficiently
+        # Initialize Pinecone client
+        pc = Pinecone(api_key=PINECONE_API_KEY)
+        logger.info("Initialized pinecone client")
+        # Create index if it doesn't exist
+        if PINECONE_INDEX_NAME not in pc.list_indexes().names():
+            pc.create_index(
+                name=PINECONE_INDEX_NAME,
+                dimension=384,  # Dimension of all-MiniLM-L6-v2 embeddings
+                metric="cosine",
+                spec=ServerlessSpec(cloud="aws", region="us-west-2")  # Adjust region as needed
+            )
+
+        # Split documents
         text_splitter = RecursiveCharacterTextSplitter(
             chunk_size=chunk_size,
             chunk_overlap=chunk_overlap,
@@ -89,61 +95,48 @@ def vector_store_creation(
         splits = text_splitter.split_documents(flat_docs)
         logger.info(f"Created {len(splits)} document chunks")
 
-        # Ensure persist directory exists
-        os.makedirs(persist_directory, exist_ok=True)
-
         # Create and populate vector store
-        vector_store = Chroma(
-            collection_name="chatbot_portfolio",
-            embedding_function=hf_embeddings,
-            persist_directory=persist_directory
+        vector_store = PineconeVectorStore.from_documents(
+            documents=splits,
+            embedding=hf_embeddings,
+            index_name=PINECONE_INDEX_NAME
         )
         
-        # Add documents in batches for better performance
-        batch_size = 1000
-        for i in range(0, len(splits), batch_size):
-            batch = splits[i:i + batch_size]
-            vector_store.add_documents(documents=batch)
-            logger.info(f"Processed batch {i//batch_size + 1}")
-
+        logger.info("Successfully created and populated Pinecone vector store")
         return vector_store
 
     except Exception as e:
         logger.error(f"Error creating vector store: {str(e)}")
         raise
 
-def load_vector_store(persist_directory: str = "./chatbot_portfolio") -> Optional[Chroma]:
-
+def load_vector_store() -> Optional[PineconeVectorStore]:
     """
-    Load an existing Chroma vector store from disk.
-
-    Args:
-        persist_directory (str): Directory containing the persisted vector store.
+    Load an existing Pinecone vector store.
 
     Returns:
-        Optional[Chroma]: Loaded vector store object or None if loading fails.
-
-    Raises:
-        FileNotFoundError: If the persist directory doesn't exist.
+        Optional[PineconeVectorStore]: Loaded vector store object or None if loading fails.
     """
     try:
-        if not os.path.exists(persist_directory):
-            raise FileNotFoundError(f"Persist directory '{persist_directory}' not found")
-
+        # Initialize embeddings
         hf_embeddings = HuggingFaceEmbeddings(
             model_name="sentence-transformers/all-MiniLM-L6-v2",
             model_kwargs={'device': 'cpu'},
             encode_kwargs={'normalize_embeddings': True},
             cache_folder="/app/hf_cache"
         )
-        
-        vector_store = Chroma(
-            collection_name="chatbot_portfolio",
-            embedding_function=hf_embeddings,
-            persist_directory=persist_directory
+
+        # Initialize Pinecone client and verify index exists
+        pc = Pinecone(api_key=PINECONE_API_KEY)
+        if PINECONE_INDEX_NAME not in pc.list_indexes().names():
+            raise ValueError(f"Pinecone index '{PINECONE_INDEX_NAME}' not found")
+
+        # Load existing vector store
+        vector_store = PineconeVectorStore(
+            index_name=PINECONE_INDEX_NAME,
+            embedding=hf_embeddings
         )
         
-        logger.info(f"Successfully loaded vector store from {persist_directory}")
+        logger.info(f"Successfully loaded Pinecone vector store")
         return vector_store
 
     except Exception as e:
