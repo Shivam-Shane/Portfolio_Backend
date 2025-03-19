@@ -11,9 +11,6 @@ from vectorstorecreation import load_vector_store
 from better_profanity import profanity
 from templates import template_details
 from logger import logger
-#Load the vector store once at startup (global variable)
-vector_store=load_vector_store()
-retriever=vector_store.as_retriever(search_kwargs={"k":3})
 
 
 class ChatModelPortfolio():
@@ -58,7 +55,7 @@ class ChatModelPortfolio():
 
             rag_chain_with_history = RunnableWithMessageHistory(
                 runnable=(
-                    {"context": lambda x: retriever.invoke(x["input"]), "input": RunnablePassthrough(), "history": lambda x: x.get("history", "")}
+                    {"context": lambda x: self.retriever.invoke(x["input"]), "input": RunnablePassthrough(), "history": lambda x: x.get("history", "")}
                     | self.prompt
                     | self.llm
                     | StrOutputParser()

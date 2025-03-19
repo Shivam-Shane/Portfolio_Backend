@@ -73,7 +73,8 @@ def vector_store_creation(
         hf_embeddings = HuggingFaceEmbeddings(
             model_name="sentence-transformers/all-MiniLM-L6-v2",
             model_kwargs={'device': 'cpu'},  # Adjust based on available hardware
-            encode_kwargs={'normalize_embeddings': True}
+            encode_kwargs={'normalize_embeddings': True},
+            cache_folder="/app/hf_cache"
         )
 
         # Split documents efficiently
@@ -132,7 +133,8 @@ def load_vector_store(persist_directory: str = "./chatbot_portfolio") -> Optiona
         hf_embeddings = HuggingFaceEmbeddings(
             model_name="sentence-transformers/all-MiniLM-L6-v2",
             model_kwargs={'device': 'cpu'},
-            encode_kwargs={'normalize_embeddings': True}
+            encode_kwargs={'normalize_embeddings': True},
+            cache_folder="/app/hf_cache"
         )
         
         vector_store = Chroma(

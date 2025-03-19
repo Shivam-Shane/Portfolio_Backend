@@ -1,0 +1,31 @@
+  services:
+    portfoliobackend:
+      build: .
+      container_name: django_app
+      restart: always
+      command: gunicorn --bind 0.0.0.0:3003 --timeout 120 portfoliobackend.wsgi:application
+      volumes:
+        - .:/app
+        - static_volume:/app/static
+        - media_volume:/app/media
+        - hf_cache:/app/hf_cache
+      expose:
+        - "3003"
+      env_file:
+      - .env
+
+    nginx:
+      image: nginx:latest
+      container_name: nginx_proxy
+      restart: always
+      ports:
+        - "80:80"
+      volumes:
+        - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+      depends_on:
+        - portfoliobackend
+
+  volumes:
+    static_volume:
+    media_volume:
+    hf_cache:

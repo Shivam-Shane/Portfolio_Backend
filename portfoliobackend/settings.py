@@ -59,13 +59,9 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 DEBUG = False
 #In production (when DEBUG = False), Django requires ALLOWED_HOSTS to be non-empty, or it will reject all requests with a 400 Bad Request error.
 
-ALLOWED_HOSTS = [
-
-    "portfolio-backend-h6hf.onrender.com",  # Your backend domain
-    "localhost",  # Allow local development
-    "127.0.0.1",
-    "https://shivam-portfoliio.vercel.app/"
-]
+# Load ALLOWED_HOSTS from environment, split by comma, and strip whitespace
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+ALLOWED_HOSTS = [host.strip() for host in ALLOWED_HOSTS if host.strip()]
 #This restricts the Host header to your backend’s domain, preventing spoofing attempts from other domains.
 #Note: You don’t include the frontend domain here—it’s about the backend’s identity.
 #The browser will block any cross-origin requests from domains not in this list

@@ -1,0 +1,34 @@
+# Git-related
+.git
+.gitignore
+
+# Python-related
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+mychatbot/
+.env
+*.egg-info
+dist/
+build/
+
+# Django-specific
+*.log
+*.pid
+migrations/
+staticfiles/
+media/
+
+# Local development
+db.sqlite3
+
+# Docker-specific
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+hf_cache/  # Hugging Face models locally

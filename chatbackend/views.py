@@ -5,7 +5,6 @@ from rest_framework.decorators import api_view #type: ignore
 from rest_framework.request import Request
 from rest_framework.response import Response
 from main import ChatModelPortfolio
-chatbackendobject=ChatModelPortfolio()
 from logger import logger
 # Initialize chat backend with error handling
 try:
