@@ -21,7 +21,7 @@ class ChatModelPortfolio():
         vector_store=load_vector_store()
         profanity.add_censor_words(['adult'])
         self.history_store = {} # In-memory history store
-        self.llm=ChatGroq(api_key=GROQ_API_KEY,max_tokens=400)
+        self.llm=ChatGroq(model=os.getenv("LLM_MODEL"),api_key=GROQ_API_KEY,max_tokens=400)
         self.retriever=vector_store.as_retriever(search_kwargs={"k":3})
         self.prompt=PromptTemplate(
             input_variables=["history", "input", "context"],
