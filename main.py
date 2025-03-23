@@ -8,7 +8,7 @@ from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
 from upstash_redis import Redis
-from vectorstorecreation import load_vector_store
+from vectorstoreloader import load_vector_store
 from better_profanity import profanity
 from templates import template_details
 from logger import logger
