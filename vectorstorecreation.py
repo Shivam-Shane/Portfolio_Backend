@@ -53,9 +53,8 @@ def portfolio_reader(url='https://shivam-portfoliio.vercel.app/'):
         if not docs:
             logger.error("No portfolio items found at the provided URL.")
             return []
-        content=docs[0].page_content
         logger.info("Portfolio Data fetched successfully.")
-        return content
+        return docs
 
     except Exception as e:
         logger.error(f"Error reading portfolio items: {str(e)}")
