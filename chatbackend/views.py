@@ -13,7 +13,7 @@ except Exception as e:
     logger.error(f"Failed to initialize ChatModelPortfolio: {str(e)}")
     chat_backend = None
 
-def chat(request: Request)-> JsonResponse:
+def healthcheck(request: Request)-> JsonResponse:
     """
     Health check endpoint to verify chatbot availability.
 

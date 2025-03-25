@@ -16,10 +16,10 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
-from chatbackend.views import chat,chat_worker
+from chatbackend.views import healthcheck,chat_worker
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/chat/',chat,name='chatportfolio'),
+    path('api/healthcheck/',healthcheck,name='chatportfolio'),
     path('api/chat_worker/',chat_worker,name='chat_worker')
 ]
